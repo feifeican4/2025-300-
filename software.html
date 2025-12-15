@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 威科夫专业分析系统 v2.1</title>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+            --secondary-gradient: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            --danger-gradient: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            --success-gradient: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            --warning-gradient: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
+            --dark-bg: #1a1a2e;
+            --card-bg: #ffffff;
+            --border-color: #e1e8ed;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 30px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
+            background-size: cover;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            font-size: 42px;
+            background: rgba(255, 255, 255, 0.2);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .logo-text h1 {
+            font-size: 2.4em;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-text p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .version-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 18px 35px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-right: 1px solid var(--border-color);
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tab:hover {
+            background: #edf2f7;
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--text-primary);
+            border-bottom: 3px solid #3498db;
+        }
+
+        .tab.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-gradient);
+        }
+
+        .tab-content {
+            padding: 0;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .upload-section {
+            padding: 50px 40px;
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 3px dashed #3498db;
+            border-radius: var(--radius);
+            padding: 70px 30px;
+            margin: 30px auto;
+            max-width: 700px;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(52, 152, 219, 0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .upload-area:hover {
+            background: #e8f4fd;
+            border-color: #2980b9;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(52, 152, 219, 0.15);
+        }
+
+        .upload-icon {
+            font-size: 80px;
+            color: #3498db;
+            margin-bottom: 25px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-text {
+            font-size: 22px;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: var(--success-gradient);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .control-panel {
+            background: #f8fafc;
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+
+        .quick-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quick-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e1e8ed;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .quick-buttons button:hover {
+            background: #f8f9fa;
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .update-btn {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(26, 41, 128, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .update-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(26, 41, 128, 0.3);
+        }
+
+        .signal-controls {
+            margin-top: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .signal-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .signal-tab {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .signal-tab:hover {
+            background: #e9ecef;
+        }
+
+        .signal-tab.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .signal-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .signal-btn {
+            padding: 6px 14px;
+            border: 2px solid #e1e8ed;
+            border-radius: 50px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .signal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .signal-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .chart-container {
+            padding: 25px;
+            min-height: 850px;
+            position: relative;
+            background: white;
+        }
+
+        .data-preview {
+            margin-top: 30px;
+            max-height: 350px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-preview table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-preview th,
+        .data-preview td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .data-preview th {
+            background: #f8fafc;
+            position: sticky;
+            top: 0;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .data-preview tr:hover {
+            background: #f8fafc;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 120px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .signal-annotation {
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 3px 10px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.98);
+            border: 2px solid;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .signal-annotation:hover {
+            transform: scale(1.05);
+            z-index: 1000;
+        }
+
+        .legend {
+            position: absolute;
+            top: 150px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            z-index: 10;
+            font-size: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            max-width: 220px;
+            backdrop-filter: blur(5px);
+        }
+
+        .legend-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+        }
+
+        .legend-color {
+            width: 18px;
+            height: 12px;
+            margin-right: 8px;
+            border-radius: 2px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            padding: 15px 20px;
+            background: #ffeaea;
+            border-radius: var(--radius);
+            margin: 20px 0;
+            display: none;
+            border-left: 4px solid #e74c3c;
+            font-weight: 600;
+        }
+
+        .success-message {
+            color: #27ae60;
+            padding: 15px 20px;
+            background: #eaffea;
+            border-radius: var(--radius);
+            margin: 20px 0;
+            display: none;
+            border-left: 4px solid #27ae60;
+            font-weight: 600;
+        }
+
+        .volume-distribution {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            z-index: 10;
+            font-size: 11px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            max-width: 250px;
+            backdrop-filter: blur(5px);
+        }
+
+        .volume-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            padding: 3px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .volume-label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .volume-value {
+            font-weight: 700;
+            color: #3498db;
+        }
+
+        /* 绘图工具样式增强 */
+        .modebar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-radius: 8px !important;
+            border: 1px solid var(--border-color) !important;
+            padding: 5px !important;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .modebar-group {
+            background: transparent !important;
+        }
+
+        .modebar-btn {
+            background: white !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 4px !important;
+            margin: 0 2px !important;
+        }
+
+        .modebar-btn:hover {
+            background: #f8fafc !important;
+            border-color: #3498db !important;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .control-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+            }
+
+            .logo {
+                flex-direction: column;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+
+            .header-content {
+                flex-direction: column;
+            }
+
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .upload-section {
+                padding: 30px 20px;
+            }
+
+            .upload-area {
+                padding: 40px 20px;
+            }
+
+            .legend, .volume-distribution {
+                position: static;
+                margin-top: 20px;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>威科夫专业分析系统</h1>
+                        <p>基于成交量分布的初步停止与高潮事件识别</p>
+                        <span class="version-badge">v2.1 - 增强初步停止检测</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 10px;">专业机构级分析工具</div>
+                    <div style="display: flex; gap: 15px; font-size: 0.9em;">
+                        <div><i class="fas fa-hand-paper"></i> 初步停止</div>
+                        <div><i class="fas fa-fire"></i> 高潮事件</div>
+                        <div><i class="fas fa-brain"></i> 智能分析</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('upload')">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>数据上传</span>
+            </div>
+            <div class="tab" onclick="switchTab('analyze')">
+                <i class="fas fa-chart-bar"></i>
+                <span>专业分析</span>
+            </div>
+            <div class="tab" onclick="switchTab('about')">
+                <i class="fas fa-info-circle"></i>
+                <span>关于系统</span>
+            </div>
+        </div>
+
+        <!-- 上传数据标签页 -->
+        <div id="upload-tab" class="tab-content active">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-file-csv"></i>
+                    </div>
+                    <div class="upload-text">上传CSV文件开始威科夫分析</div>
+                    <div class="upload-hint">
+                        <strong>支持格式:</strong> CSV文件 (UTF-8编码)<br>
+                        <strong>必需列:</strong> 股票代码,日期,开盘,收盘,最高,最低,成交量,成交额,振幅,涨跌额,换手率,涨跌幅<br>
+                        <strong>建议数据:</strong> 至少包含100个交易日数据以获得最佳分析结果
+                    </div>
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-folder-open"></i>
+                        选择CSV文件
+                    </button>
+                    <input type="file" id="fileInput" class="file-input" accept=".csv" onchange="handleFileSelect(event)">
+                </div>
+
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+
+                <div id="dataPreview" class="data-preview" style="display: none;">
+                    <h3 style="padding: 15px; margin: 0; border-bottom: 1px solid var(--border-color);">数据预览</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-hashtag"></i> 股票代码</th>
+                                <th><i class="fas fa-calendar"></i> 日期</th>
+                                <th><i class="fas fa-door-open"></i> 开盘</th>
+                                <th><i class="fas fa-door-closed"></i> 收盘</th>
+                                <th><i class="fas fa-arrow-up"></i> 最高</th>
+                                <th><i class="fas fa-arrow-down"></i> 最低</th>
+                                <th><i class="fas fa-chart-bar"></i> 成交量</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewTable"></tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 40px;">
+                    <button class="upload-btn" onclick="startAnalysis()"
+                            style="background: var(--primary-gradient);">
+                        <i class="fas fa-rocket"></i>
+                        开始威科夫分析
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分析标签页 -->
+        <div id="analyze-tab" class="tab-content">
+            <div class="control-panel">
+                <div class="control-grid">
+                    <div class="form-group">
+                        <label for="stockSelect">
+                            <i class="fas fa-chart-line"></i>
+                            选择股票代码
+                        </label>
+                        <select id="stockSelect"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="startDate">
+                            <i class="fas fa-calendar-alt"></i>
+                            开始日期
+                        </label>
+                        <input type="date" id="startDate">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endDate">
+                            <i class="fas fa-calendar-alt"></i>
+                            结束日期
+                        </label>
+                        <input type="date" id="endDate">
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-bolt"></i>
+                            快速选择
+                        </label>
+                        <div class="quick-buttons">
+                            <button onclick="setDateRange(30)">1个月</button>
+                            <button onclick="setDateRange(90)">3个月</button>
+                            <button onclick="setDateRange(180)">6个月</button>
+                            <button onclick="setAllData()">全部数据</button>
+                        </div>
+                    </div>
+
+                    <button onclick="updateChart()" class="update-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        更新图表
+                    </button>
+                </div>
+
+                <div class="signal-controls">
+                    <label style="font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-filter"></i>
+                        信号类型筛选:
+                    </label>
+
+                    <div class="signal-tabs" id="signalTabs">
+                        <div class="signal-tab active" data-category="all">全部信号</div>
+                        <div class="signal-tab" data-category="stop">初步停止</div>
+                        <div class="signal-tab" data-category="climax">高潮事件</div>
+                        <div class="signal-tab" data-category="background">市场背景</div>
+                        <div class="signal-tab" data-category="other">其他信号</div>
+                    </div>
+
+                    <div class="signal-buttons" id="signalButtons"></div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div id="chart" class="loading">
+                    <i class="fas fa-chart-line" style="font-size: 60px; color: #ddd; margin-bottom: 20px;"></i>
+                    <h3>等待数据分析</h3>
+                    <p>请使用"数据上传"标签页上传您的CSV文件</p>
+                </div>
+            </div>
+
+            <div id="volumeDistribution" class="volume-distribution" style="display: none;">
+                <div class="legend-title">
+                    <i class="fas fa-weight-hanging"></i>
+                    成交量分布指标
+                </div>
+                <div id="volumeMetrics"></div>
+            </div>
+        </div>
+
+        <!-- 关于系统标签页 -->
+        <div id="about-tab" class="tab-content">
+            <div style="padding: 40px;">
+                <h2 style="margin-bottom: 30px; color: var(--text-primary); display: flex; align-items: center; gap: 15px;">
+                    <i class="fas fa-info-circle"></i>
+                    威科夫分析系统说明
+                </h2>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
+                    <!-- 初步停止卡片 -->
+                    <div style="background: white; border-radius: var(--radius); padding: 25px; border: 1px solid var(--border-color); box-shadow: var(--shadow);">
+                        <h3 style="color: #3498db; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-hand-paper"></i>
+                            初步停止事件 (PS/PSY)
+                        </h3>
+                        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 15px;">
+                            <strong>初步支撑(PS):</strong> 下跌趋势中的第一次停止尝试，通常出现在抛售高潮之前。成交量放大，价格波动剧烈，表明专业买盘开始入场。
+                        </p>
+                        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 15px;">
+                            <strong>初步供应(PSY):</strong> 上涨趋势中的第一次停止尝试，通常出现在买入高潮之前。成交量放大，表明专业卖盘开始入场。
+                        </p>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong>识别规则:</strong>
+                            <ul style="margin-top: 10px; padding-left: 20px; color: var(--text-secondary);">
+                                <li>必须出现在高潮事件附近（前后5-10个周期）</li>
+                                <li>成交量显著放大（通常1.5倍以上平均量）</li>
+                                <li>吸筹结构配初步支撑，派发结构配初步供应</li>
+                                <li>与高潮事件共同构成黑框标注区域</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 高潮事件卡片 -->
+                    <div style="background: white; border-radius: var(--radius); padding: 25px; border: 1px solid var(--border-color); box-shadow: var(--shadow);">
+                        <h3 style="color: #e74c3c; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-fire"></i>
+                            高潮事件 (SC/BC)
+                        </h3>
+                        <div style="display: grid; gap: 15px;">
+                            <div>
+                                <strong style="color: #c0392b;">抛售高潮(SC):</strong>
+                                <p style="color: var(--text-secondary); margin-top: 5px;">下跌趋势的极端终结，成交量巨大，通常有初步支撑在前。</p>
+                            </div>
+                            <div>
+                                <strong style="color: #e67e22;">买入高潮(BC):</strong>
+                                <p style="color: var(--text-secondary); margin-top: 5px;">上涨趋势的极端终结，成交量巨大，通常有初步供应在前。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 40px; background: var(--primary-gradient); color: white; padding: 30px; border-radius: var(--radius);">
+                    <h3 style="margin-bottom: 15px;"><i class="fas fa-lightbulb"></i> 使用指南</h3>
+                    <p>1. 上传CSV文件后，系统自动切换到分析页面并选择第一支股票</p>
+                    <p>2. 初步停止必须与高潮事件配对出现才会被识别</p>
+                    <p>3. 吸筹结构中寻找PS+SC组合，派发结构中寻找PSY+BC组合</p>
+                    <p>4. 配对成功的停止与高潮事件会用黑框特别标注</p>
+                    <p>5. 使用信号分类标签可以快速筛选不同类型的信号</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let uploadedData = {};
+        let stockData = {};
+        let currentSignals = {};
+        let activeSignalTypes = new Set();
+        let signalAnnotations = {};
+        let minDate = '';
+        let maxDate = '';
+        let volumeDistributionData = {};
+        let currentSignalCategory = 'all';
+
+        // 信号定义 - 重新分类
+        const allSignals = {
+            'stop': ['PS', 'PSY', '初步支撑', '初步供应'],
+            'climax': ['SC', 'BC', '抛售高潮', '买入高潮', 'AR', '自动反弹', '自动回落'],
+            'background': ['背景', '背景-吸筹', '背景-牛市', '背景-派发', '背景-熊市', '背景-横盘市场'],
+            'other': [
+                '停止行为', '恐慌抛售', '二次测试', '超卖', '死角',
+                '震仓', 'Spring', 'SOS', 'JOC', 'LPS', 'VDB',
+                'SOT', 'UT', 'LPSY', 'SOW', 'VSB'
+            ]
+        };
+
+        // 扁平化所有信号用于快速查找
+        const allSignalsFlat = [];
+        Object.values(allSignals).forEach(category => {
+            category.forEach(signal => {
+                if (!allSignalsFlat.includes(signal)) {
+                    allSignalsFlat.push(signal);
+                }
+            });
+        });
+
+        // 信号颜色映射
+        const signalColors = {
+            // 初步停止
+            'PS': '#3498db', '初步支撑': '#3498db',
+            'PSY': '#e67e22', '初步供应': '#e67e22',
+
+            // 高潮事件
+            'SC': '#c0392b', '抛售高潮': '#c0392b',
+            'BC': '#e67e22', '买入高潮': '#e67e22',
+            'AR': '#9b59b6', '自动反弹': '#9b59b6', '自动回落': '#9b59b6',
+
+            // 市场背景
+            '背景-吸筹': '#27ae60', '背景-牛市': '#3498db', '背景-派发': '#e74c3c',
+            '背景-熊市': '#f39c12', '背景-横盘市场': '#95a5a6',
+
+            // 其他信号
+            '停止行为': '#16a085', '恐慌抛售': '#8e44ad', '二次测试': '#9b59b6',
+            '超卖': '#e74c3c', '死角': '#9b59b6', '震仓': '#3498db', 'Spring': '#2ecc71',
+            'SOS': '#27ae60', 'JOC': '#16a085', 'LPS': '#2980b9', 'VDB': '#2ecc71',
+            'SOT': '#e67e22', 'UT': '#d35400', 'LPSY': '#c0392b',
+            'SOW': '#f39c12', 'VSB': '#e74c3c'
+        };
+
+        // 背景颜色
+        const backgroundColors = {
+            '吸筹': 'rgba(144, 238, 144, 0.2)',
+            '牛市': 'rgba(173, 216, 230, 0.2)',
+            '派发': 'rgba(255, 182, 193, 0.2)',
+            '熊市': 'rgba(255, 160, 122, 0.2)',
+            '横盘市场': 'rgba(211, 211, 211, 0.2)'
+        };
+
+        // 标签切换
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            const tabElement = document.querySelector(`.tab[onclick*="${tabName}"]`);
+            if (tabElement) tabElement.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // 处理文件选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+
+            // 显示加载状态
+            const uploadArea = document.getElementById('uploadArea');
+            const originalHTML = uploadArea.innerHTML;
+            uploadArea.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 50px; color: #3498db; margin-bottom: 20px;"></i>
+                    <div style="font-size: 18px; color: #2c3e50;">正在解析CSV文件...</div>
+                    <div style="font-size: 14px; color: #7f8c8d; margin-top: 10px;">请稍候</div>
+                </div>
+            `;
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                encoding: 'UTF-8',
+                complete: function(results) {
+                    // 恢复上传区域
+                    uploadArea.innerHTML = originalHTML;
+
+                    if (results.errors.length > 0) {
+                        showError('CSV解析错误: ' + results.errors[0].message);
+                        return;
+                    }
+
+                    const requiredColumns = ['股票代码', '日期', '开盘', '收盘', '最高', '最低', '成交量', '成交额', '振幅', '涨跌额', '换手率', '涨跌幅'];
+                    const missingColumns = requiredColumns.filter(col => !results.meta.fields.includes(col));
+
+                    if (missingColumns.length > 0) {
+                        showError(`缺少必需列: ${missingColumns.join(', ')}`);
+                        return;
+                    }
+
+                    if (results.data.length < 20) {
+                        showError('数据量不足，请提供至少20个交易日的数据');
+                        return;
+                    }
+
+                    processData(results.data);
+                    showSuccess(`成功加载 ${results.data.length} 行数据，发现 ${Object.keys(stockData).length} 支股票`);
+
+                    // 自动切换到分析页面并选择第一支股票
+                    setTimeout(() => {
+                        startAnalysis();
+                    }, 500);
+                },
+                error: function(error) {
+                    uploadArea.innerHTML = originalHTML;
+                    showError('读取文件时出错: ' + error.message);
+                }
+            });
+        }
+
+        // 处理拖放
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#2980b9';
+            uploadArea.style.background = '#e8f4fd';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#3498db';
+            uploadArea.style.background = '#f8fafc';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#3498db';
+            uploadArea.style.background = '#f8fafc';
+
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+                    handleFileSelect({ target: { files: [file] } });
+                } else {
+                    showError('请上传CSV文件（.csv格式）');
+                }
+            }
+        });
+
+        // 显示错误消息
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            errorMessage.style.display = 'block';
+        }
+
+        // 显示成功消息
+        function showSuccess(message) {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            successMessage.style.display = 'block';
+        }
+
+        // 处理数据
+        function processData(data) {
+            uploadedData = data;
+
+            // 转换数据类型并清理
+            uploadedData.forEach((row, index) => {
+                row.开盘 = parseFloat(row.开盘) || 0;
+                row.收盘 = parseFloat(row.收盘) || 0;
+                row.最高 = parseFloat(row.最高) || 0;
+                row.最低 = parseFloat(row.最低) || 0;
+                row.成交量 = parseFloat(row.成交量) || 0;
+                row.成交额 = parseFloat(row.成交额) || 0;
+                row.振幅 = parseFloat(row.振幅) || 0;
+                row.涨跌幅 = parseFloat(row.涨跌幅) || 0;
+                row.涨跌额 = parseFloat(row.涨跌额) || 0;
+                row.换手率 = parseFloat(row.换手率) || 0;
+
+                // 确保日期格式正确
+                if (row.日期 && !row.日期.includes('-')) {
+                    if (row.日期.includes('/')) {
+                        const parts = row.日期.split('/');
+                        if (parts.length === 3) {
+                            row.日期 = `${parts[0].padStart(4, '20')}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                        }
+                    }
+                }
+            });
+
+            // 按股票代码分组
+            const stocks = {};
+            const allDates = [];
+
+            uploadedData.forEach(row => {
+                const code = row.股票代码;
+                if (!stocks[code]) {
+                    stocks[code] = [];
+                }
+                stocks[code].push(row);
+                if (row.日期) allDates.push(row.日期);
+            });
+
+            // 对每个股票的数据按日期排序
+            stockData = {};
+            Object.keys(stocks).forEach(code => {
+                const stockRows = stocks[code];
+                stockRows.sort((a, b) => new Date(a.日期) - new Date(b.日期));
+
+                // 过滤无效数据
+                const validRows = stockRows.filter(r =>
+                    r.日期 && r.开盘 && r.收盘 && r.最高 && r.最低 && r.成交量
+                );
+
+                if (validRows.length > 0) {
+                    stockData[code] = {
+                        dates: validRows.map(r => r.日期),
+                        open: validRows.map(r => r.开盘),
+                        high: validRows.map(r => r.最高),
+                        low: validRows.map(r => r.最低),
+                        close: validRows.map(r => r.收盘),
+                        volume: validRows.map(r => r.成交量),
+                        amount: validRows.map(r => r.成交额),
+                        change_rate: validRows.map(r => r.涨跌幅),
+                        amplitude: validRows.map(r => r.振幅)
+                    };
+                }
+            });
+
+            // 计算日期范围
+            if (allDates.length > 0) {
+                const dates = allDates.map(d => new Date(d)).sort((a, b) => a - b);
+                minDate = dates[0].toISOString().split('T')[0];
+                maxDate = dates[dates.length - 1].toISOString().split('T')[0];
+            }
+
+            // 更新股票选择下拉框
+            const stockSelect = document.getElementById('stockSelect');
+            stockSelect.innerHTML = '<option value="">请选择股票</option>';
+            Object.keys(stockData).forEach(code => {
+                const option = document.createElement('option');
+                option.value = code;
+                option.textContent = `${code} (${stockData[code].dates.length}个交易日)`;
+                stockSelect.appendChild(option);
+            });
+
+            // 自动选择第一支股票
+            if (Object.keys(stockData).length > 0) {
+                const firstStock = Object.keys(stockData)[0];
+                stockSelect.value = firstStock;
+            }
+
+            // 设置日期控件
+            if (minDate && maxDate) {
+                const today = new Date();
+                const threeMonthsAgo = new Date();
+                threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+                const endDate = maxDate ? new Date(maxDate) : today;
+                let startDate = new Date(endDate);
+                startDate.setMonth(startDate.getMonth() - 3);
+
+                if (startDate < new Date(minDate)) {
+                    startDate = new Date(minDate);
+                }
+
+                document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+                document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+                document.getElementById('startDate').min = minDate;
+                document.getElementById('startDate').max = maxDate;
+                document.getElementById('endDate').min = minDate;
+                document.getElementById('endDate').max = maxDate;
+            }
+
+            // 显示数据预览
+            showDataPreview();
+
+            // 初始化信号选择
+            createSignalButtons();
+
+            // 默认激活所有信号
+            allSignalsFlat.forEach(signal => activeSignalTypes.add(signal));
+            createSignalButtons();
+        }
+
+        // 显示数据预览
+        function showDataPreview() {
+            const preview = document.getElementById('dataPreview');
+            const table = document.getElementById('previewTable');
+
+            if (Object.keys(stockData).length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+
+            preview.style.display = 'block';
+            table.innerHTML = '';
+
+            // 显示前10行数据
+            const firstStockCode = Object.keys(stockData)[0];
+            const firstStockData = stockData[firstStockCode];
+
+            if (!firstStockData || firstStockData.dates.length === 0) return;
+
+            for (let i = 0; i < Math.min(10, firstStockData.dates.length); i++) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${firstStockCode}</td>
+                    <td>${firstStockData.dates[i]}</td>
+                    <td>${firstStockData.open[i].toFixed(2)}</td>
+                    <td>${firstStockData.close[i].toFixed(2)}</td>
+                    <td>${firstStockData.high[i].toFixed(2)}</td>
+                    <td>${firstStockData.low[i].toFixed(2)}</td>
+                    <td>${(firstStockData.volume[i] / 10000).toFixed(2)}万</td>
+                `;
+                table.appendChild(row);
+            }
+        }
+
+        // 创建信号按钮（按分类）
+        function createSignalButtons() {
+            const container = document.getElementById('signalButtons');
+            container.innerHTML = '';
+
+            // 控制按钮
+            const controlButtons = [
+                {text: '全选', action: () => toggleAllSignals(true), icon: 'fa-check-square'},
+                {text: '全不选', action: () => toggleAllSignals(false), icon: 'fa-square'},
+                {text: '反选', action: () => toggleInverseSelection(), icon: 'fa-exchange-alt'}
+            ];
+
+            controlButtons.forEach(btn => {
+                const button = document.createElement('button');
+                button.className = 'signal-btn';
+                button.style.background = '#f8f9fa';
+                button.innerHTML = `<i class="fas ${btn.icon}"></i> ${btn.text}`;
+                button.onclick = btn.action;
+                container.appendChild(button);
+            });
+
+            // 根据当前分类显示信号
+            let signalsToShow = [];
+
+            if (currentSignalCategory === 'all') {
+                signalsToShow = allSignalsFlat;
+            } else if (allSignals[currentSignalCategory]) {
+                signalsToShow = allSignals[currentSignalCategory];
+            }
+
+            // 单个信号按钮
+            for (const signal of signalsToShow) {
+                const btn = document.createElement('button');
+                btn.className = `signal-btn ${activeSignalTypes.has(signal) ? 'active' : ''}`;
+
+                // 设置颜色
+                if (signalColors[signal]) {
+                    btn.style.borderLeft = `4px solid ${signalColors[signal]}`;
+                }
+
+                // 添加图标
+                let icon = 'fa-circle';
+                if (signal.includes('PS') || signal.includes('初步')) icon = 'fa-hand-paper';
+                if (signal.includes('SC') || signal.includes('抛售')) icon = 'fa-fire';
+                if (signal.includes('BC') || signal.includes('买入')) icon = 'fa-bullhorn';
+                if (signal.includes('背景')) icon = 'fa-globe';
+                if (signal.includes('SOS')) icon = 'fa-arrow-up';
+                if (signal.includes('SOT')) icon = 'fa-arrow-down';
+
+                btn.innerHTML = `<i class="fas ${icon}"></i> ${signal}`;
+                btn.onclick = () => toggleSignal(signal);
+                container.appendChild(btn);
+            }
+        }
+
+        // 初始化信号标签切换
+        function initSignalTabs() {
+            const tabs = document.querySelectorAll('.signal-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 更新激活状态
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // 更新当前分类
+                    currentSignalCategory = this.dataset.category;
+
+                    // 重新创建信号按钮
+                    createSignalButtons();
+                });
+            });
+        }
+
+        function toggleSignal(signal) {
+            if (activeSignalTypes.has(signal)) {
+                activeSignalTypes.delete(signal);
+            } else {
+                activeSignalTypes.add(signal);
+            }
+            createSignalButtons();
+            if (document.getElementById('analyze-tab').classList.contains('active')) {
+                updateChart();
+            }
+        }
+
+        function toggleAllSignals(enable) {
+            if (enable) {
+                allSignalsFlat.forEach(signal => activeSignalTypes.add(signal));
+            } else {
+                activeSignalTypes.clear();
+            }
+            createSignalButtons();
+            if (document.getElementById('analyze-tab').classList.contains('active')) {
+                updateChart();
+            }
+        }
+
+        function toggleInverseSelection() {
+            allSignalsFlat.forEach(signal => {
+                if (activeSignalTypes.has(signal)) {
+                    activeSignalTypes.delete(signal);
+                } else {
+                    activeSignalTypes.add(signal);
+                }
+            });
+            createSignalButtons();
+            if (document.getElementById('analyze-tab').classList.contains('active')) {
+                updateChart();
+            }
+        }
+
+        // 开始分析
+        function startAnalysis() {
+            if (Object.keys(stockData).length === 0) {
+                showError('请先上传数据文件');
+                return;
+            }
+
+            const stockSelect = document.getElementById('stockSelect');
+            if (!stockSelect.value && Object.keys(stockData).length > 0) {
+                // 自动选择第一支股票
+                const firstStock = Object.keys(stockData)[0];
+                stockSelect.value = firstStock;
+            }
+
+            switchTab('analyze');
+            setTimeout(() => {
+                initSignalTabs();
+                updateChart();
+            }, 100);
+        }
+
+        // 设置日期范围
+        function setDateRange(days) {
+            if (!maxDate) return;
+
+            const endDate = new Date(maxDate);
+            const startDate = new Date(endDate);
+            startDate.setDate(startDate.getDate() - days + 1);
+
+            if (startDate < new Date(minDate)) {
+                startDate = new Date(minDate);
+            }
+
+            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+            updateChart();
+        }
+
+        // 设置全部数据
+        function setAllData() {
+            if (!minDate || !maxDate) return;
+
+            document.getElementById('startDate').value = minDate;
+            document.getElementById('endDate').value = maxDate;
+            updateChart();
+        }
+
+        // 计算成交量分布指标
+        function calculateVolumeDistribution(data) {
+            const { close, volume, dates } = data;
+
+            if (!close || close.length === 0) return {};
+
+            // 计算VWAP（成交量加权平均价）
+            let totalVolumeValue = 0;
+            let totalVolume = 0;
+
+            for (let i = 0; i < close.length; i++) {
+                const typicalPrice = (data.high[i] + data.low[i] + data.close[i]) / 3;
+                totalVolumeValue += typicalPrice * volume[i];
+                totalVolume += volume[i];
+            }
+
+            const vwap = totalVolume > 0 ? totalVolumeValue / totalVolume : 0;
+
+            // 计算POC（成交量控制点）- 简化版本
+            const priceLevels = {};
+            const priceStep = (Math.max(...data.high) - Math.min(...data.low)) / 20;
+
+            for (let i = 0; i < close.length; i++) {
+                const priceLevel = Math.floor(data.close[i] / priceStep) * priceStep;
+                priceLevels[priceLevel] = (priceLevels[priceLevel] || 0) + volume[i];
+            }
+
+            let pocPrice = 0;
+            let maxVolume = 0;
+
+            for (const [price, vol] of Object.entries(priceLevels)) {
+                if (vol > maxVolume) {
+                    maxVolume = vol;
+                    pocPrice = parseFloat(price);
+                }
+            }
+
+            // 计算成交量指标
+            const avgVolume = mean(volume);
+            const volumeRatio = volume.length > 0 ? volume[volume.length - 1] / avgVolume : 1;
+
+            return {
+                vwap: vwap.toFixed(2),
+                poc: pocPrice.toFixed(2),
+                avgVolume: (avgVolume / 10000).toFixed(2) + '万',
+                currentVolume: volume.length > 0 ? (volume[volume.length - 1] / 10000).toFixed(2) + '万' : '0',
+                volumeRatio: volumeRatio.toFixed(2),
+                highVolume: (Math.max(...volume) / 10000).toFixed(2) + '万',
+                lowVolume: (Math.min(...volume) / 10000).toFixed(2) + '万'
+            };
+        }
+
+        // 显示成交量分布指标
+        function showVolumeDistribution(metrics) {
+            const container = document.getElementById('volumeDistribution');
+            const metricsDiv = document.getElementById('volumeMetrics');
+
+            metricsDiv.innerHTML = `
+                <div class="volume-item">
+                    <span class="volume-label">VWAP:</span>
+                    <span class="volume-value">${metrics.vwap}</span>
+                </div>
+                <div class="volume-item">
+                    <span class="volume-label">POC:</span>
+                    <span class="volume-value">${metrics.poc}</span>
+                </div>
+                <div class="volume-item">
+                    <span class="volume-label">平均成交量:</span>
+                    <span class="volume-value">${metrics.avgVolume}</span>
+                </div>
+                <div class="volume-item">
+                    <span class="volume-label">当前成交量:</span>
+                    <span class="volume-value">${metrics.currentVolume}</span>
+                </div>
+                <div class="volume-item">
+                    <span class="volume-label">成交量比率:</span>
+                    <span class="volume-value">${metrics.volumeRatio}x</span>
+                </div>
+            `;
+
+            container.style.display = 'block';
+        }
+
+        // 增强的威科夫信号分析
+        function analyzeWyckoffSignals(data) {
+            const signals = {};
+
+            // 分析市场背景
+            if (activeSignalTypes.has('背景')) {
+                analyzeMarketBackgrounds(data, signals);
+            }
+
+            // 分析初步停止事件（重点）
+            analyzePreliminaryStopEvents(data, signals);
+
+            // 分析高潮事件
+            analyzeClimaxEvents(data, signals);
+
+            // 分析其他信号
+            analyzeSpecificSignals(data, signals);
+
+            // 配对初步停止和高潮事件，添加黑框标注
+            pairStopAndClimaxEvents(data, signals);
+
+            return signals;
+        }
+
+        // 分析初步停止事件
+        function analyzePreliminaryStopEvents(data, signals) {
+            const closes = data.close;
+            const volumes = data.volume;
+            const highs = data.high;
+            const lows = data.low;
+            const dates = data.dates;
+
+            if (closes.length < 10) return;
+
+            // 计算成交量移动平均
+            const volumeMA = calculateMA(volumes, 20);
+
+            // 寻找初步支撑 (PS) - 吸筹结构
+            if (activeSignalTypes.has('PS') || activeSignalTypes.has('初步支撑')) {
+                for (let i = 10; i < closes.length - 5; i++) {
+                    if (isPreliminarySupport(closes, volumes, highs, lows, i, volumeMA)) {
+                        signals[`ps_${i}`] = {
+                            type: 'PS',
+                            subtype: '初步支撑',
+                            date: dates[i],
+                            index: i,
+                            description: '初步支撑：下跌趋势中的第一次停止尝试，专业买盘开始入场。成交量比率: ' +
+                                       (volumes[i] / volumeMA[i]).toFixed(2) + 'x',
+                            confidence: calculateConfidenceLevel(volumes[i], volumeMA[i], 0),
+                            price: closes[i],
+                            volume: volumes[i],
+                            matchedClimax: false
+                        };
+                    }
+                }
+            }
+
+            // 寻找初步供应 (PSY) - 派发结构
+            if (activeSignalTypes.has('PSY') || activeSignalTypes.has('初步供应')) {
+                for (let i = 10; i < closes.length - 5; i++) {
+                    if (isPreliminarySupply(closes, volumes, highs, lows, i, volumeMA)) {
+                        signals[`psy_${i}`] = {
+                            type: 'PSY',
+                            subtype: '初步供应',
+                            date: dates[i],
+                            index: i,
+                            description: '初步供应：上涨趋势中的第一次停止尝试，专业卖盘开始入场。成交量比率: ' +
+                                       (volumes[i] / volumeMA[i]).toFixed(2) + 'x',
+                            confidence: calculateConfidenceLevel(volumes[i], volumeMA[i], 0),
+                            price: closes[i],
+                            volume: volumes[i],
+                            matchedClimax: false
+                        };
+                    }
+                }
+            }
+        }
+
+        // 初步支撑识别函数
+        function isPreliminarySupport(closes, volumes, highs, lows, idx, volumeMA) {
+            if (idx < 5 || idx >= closes.length - 5) return false;
+
+            // 基础条件：价格下跌
+            const priceDown = closes[idx] < closes[idx-1];
+            if (!priceDown) return false;
+
+            // 成交量条件：显著高于平均值
+            const volumeRatio = volumes[idx] / volumeMA[idx];
+            const highVolume = volumeRatio > 1.5;
+
+            // 价格波动：较大的价格区间
+            const priceRange = highs[idx] - lows[idx];
+            const avgRange = calculateAvgRange(highs, lows, idx, 10);
+            const wideRange = priceRange > avgRange * 1.2;
+
+            // 影线特征：可能有长下影线
+            const bodySize = Math.abs(closes[idx] - closes[idx-1]);
+            const lowerShadow = Math.min(closes[idx], closes[idx-1]) - lows[idx];
+            const hasLongLowerShadow = lowerShadow > bodySize * 0.8;
+
+            // 趋势条件：之前处于下跌趋势
+            const prevTrend = isDowntrend(closes, idx, 10);
+
+            // 综合判断：吸筹结构中的初步支撑
+            return priceDown && highVolume && (wideRange || hasLongLowerShadow) && prevTrend;
+        }
+
+        // 初步供应识别函数
+        function isPreliminarySupply(closes, volumes, highs, lows, idx, volumeMA) {
+            if (idx < 5 || idx >= closes.length - 5) return false;
+
+            // 基础条件：价格上涨
+            const priceUp = closes[idx] > closes[idx-1];
+            if (!priceUp) return false;
+
+            // 成交量条件：显著高于平均值
+            const volumeRatio = volumes[idx] / volumeMA[idx];
+            const highVolume = volumeRatio > 1.5;
+
+            // 价格波动：较大的价格区间
+            const priceRange = highs[idx] - lows[idx];
+            const avgRange = calculateAvgRange(highs, lows, idx, 10);
+            const wideRange = priceRange > avgRange * 1.2;
+
+            // 影线特征：可能有长上影线
+            const bodySize = Math.abs(closes[idx] - closes[idx-1]);
+            const upperShadow = highs[idx] - Math.max(closes[idx], closes[idx-1]);
+            const hasLongUpperShadow = upperShadow > bodySize * 0.8;
+
+            // 趋势条件：之前处于上涨趋势
+            const prevTrend = isUptrend(closes, idx, 10);
+
+            // 综合判断：派发结构中的初步供应
+            return priceUp && highVolume && (wideRange || hasLongUpperShadow) && prevTrend;
+        }
+
+        // 高潮事件分析
+        function analyzeClimaxEvents(data, signals) {
+            const closes = data.close;
+            const volumes = data.volume;
+            const highs = data.high;
+            const lows = data.low;
+            const dates = data.dates;
+
+            if (closes.length < 10) return;
+
+            // 计算成交量移动平均和标准差
+            const volumeMA = calculateMA(volumes, 20);
+            const volumeStd = calculateStd(volumes, 20);
+
+            // 计算价格波动率
+            const volatility = calculateVolatility(closes, 10);
+
+            // 寻找抛售高潮 (SC)
+            if (activeSignalTypes.has('SC') || activeSignalTypes.has('抛售高潮')) {
+                for (let i = 10; i < closes.length; i++) {
+                    if (isSellingClimax(closes, volumes, highs, lows, i, volumeMA, volumeStd, volatility)) {
+                        signals[`sc_${i}`] = {
+                            type: 'SC',
+                            subtype: '抛售高潮',
+                            date: dates[i],
+                            index: i,
+                            description: '抛售高潮：下跌趋势的极端终结，成交量巨大。成交量比率: ' +
+                                       (volumes[i] / volumeMA[i]).toFixed(2) + 'x',
+                            confidence: calculateConfidenceLevel(volumes[i], volumeMA[i], volatility[i]),
+                            price: closes[i],
+                            volume: volumes[i],
+                            matchedStop: false
+                        };
+                    }
+                }
+            }
+
+            // 寻找买入高潮 (BC)
+            if (activeSignalTypes.has('BC') || activeSignalTypes.has('买入高潮')) {
+                for (let i = 10; i < closes.length; i++) {
+                    if (isBuyingClimax(closes, volumes, highs, lows, i, volumeMA, volumeStd, volatility)) {
+                        signals[`bc_${i}`] = {
+                            type: 'BC',
+                            subtype: '买入高潮',
+                            date: dates[i],
+                            index: i,
+                            description: '买入高潮：上涨趋势的极端终结，成交量巨大。成交量比率: ' +
+                                       (volumes[i] / volumeMA[i]).toFixed(2) + 'x',
+                            confidence: calculateConfidenceLevel(volumes[i], volumeMA[i], volatility[i]),
+                            price: closes[i],
+                            volume: volumes[i],
+                            matchedStop: false
+                        };
+                    }
+                }
+            }
+        }
+
+        // 抛售高潮识别函数
+        function isSellingClimax(closes, volumes, highs, lows, idx, volumeMA, volumeStd, volatility) {
+            if (idx < 5 || idx >= closes.length - 5) return false;
+
+            // 基础条件：价格下跌
+            const priceDown = closes[idx] < closes[idx-1];
+            if (!priceDown) return false;
+
+            // 成交量条件：显著高于平均值
+            const volumeRatio = volumes[idx] / volumeMA[idx];
+            const highVolume = volumeRatio > 2.0 || volumes[idx] > volumeMA[idx] + 2 * volumeStd[idx];
+
+            // 价格波动条件
+            const priceRange = highs[idx] - lows[idx];
+            const avgRange = calculateAvgRange(highs, lows, idx, 10);
+            const highVolatility = priceRange > avgRange * 1.5 || volatility[idx] > 0.02;
+
+            // 趋势条件：之前处于下跌趋势
+            const prevTrend = isDowntrend(closes, idx, 10);
+
+            // 恐慌指标：长下影线或大阴线
+            const bodySize = Math.abs(closes[idx] - closes[idx-1]);
+            const lowerShadow = Math.min(closes[idx], closes[idx-1]) - lows[idx];
+            const panicIndicator = lowerShadow > bodySize * 0.5 ||
+                                  (closes[idx-1] - closes[idx]) / closes[idx-1] > 0.04;
+
+            // 综合判断
+            return priceDown && highVolume && highVolatility && prevTrend && panicIndicator;
+        }
+
+        // 买入高潮识别函数
+        function isBuyingClimax(closes, volumes, highs, lows, idx, volumeMA, volumeStd, volatility) {
+            if (idx < 5 || idx >= closes.length - 5) return false;
+
+            // 基础条件：价格上涨
+            const priceUp = closes[idx] > closes[idx-1];
+            if (!priceUp) return false;
+
+            // 成交量条件：显著高于平均值
+            const volumeRatio = volumes[idx] / volumeMA[idx];
+            const highVolume = volumeRatio > 2.0 || volumes[idx] > volumeMA[idx] + 2 * volumeStd[idx];
+
+            // 价格波动条件
+            const priceRange = highs[idx] - lows[idx];
+            const avgRange = calculateAvgRange(highs, lows, idx, 10);
+            const highVolatility = priceRange > avgRange * 1.5 || volatility[idx] > 0.02;
+
+            // 趋势条件：之前处于上涨趋势
+            const prevTrend = isUptrend(closes, idx, 10);
+
+            // 狂热指标：长上影线或大阳线
+            const bodySize = Math.abs(closes[idx] - closes[idx-1]);
+            const upperShadow = highs[idx] - Math.max(closes[idx], closes[idx-1]);
+            const frenzyIndicator = upperShadow > bodySize * 0.5 ||
+                                   (closes[idx] - closes[idx-1]) / closes[idx-1] > 0.04;
+
+            // 综合判断
+            return priceUp && highVolume && highVolatility && prevTrend && frenzyIndicator;
+        }
+
+        // 配对初步停止和高潮事件
+        function pairStopAndClimaxEvents(data, signals) {
+            const signalArray = Object.values(signals);
+
+            // 查找所有初步停止信号
+            const stopSignals = signalArray.filter(s =>
+                (s.type === 'PS' || s.type === 'PSY') && !s.matchedClimax
+            );
+
+            // 查找所有高潮信号
+            const climaxSignals = signalArray.filter(s =>
+                (s.type === 'SC' || s.type === 'BC') && !s.matchedStop
+            );
+
+            // 配对逻辑：初步停止必须在高潮附近（前后5-10个周期内）
+            for (const stopSignal of stopSignals) {
+                for (const climaxSignal of climaxSignals) {
+                    const indexDiff = Math.abs(stopSignal.index - climaxSignal.index);
+
+                    // 检查是否在合理范围内且类型匹配
+                    if (indexDiff <= 10 && indexDiff >= 1) {
+                        // 吸筹结构：PS + SC
+                        if (stopSignal.type === 'PS' && climaxSignal.type === 'SC') {
+                            stopSignal.matchedClimax = true;
+                            climaxSignal.matchedStop = true;
+
+                            // 创建配对信号
+                            const pairId = `pair_${stopSignal.index}_${climaxSignal.index}`;
+                            signals[pairId] = {
+                                type: 'PAIR',
+                                subtype: '吸筹结构',
+                                stopSignal: stopSignal,
+                                climaxSignal: climaxSignal,
+                                date: climaxSignal.date,
+                                index: climaxSignal.index,
+                                description: `吸筹结构：初步支撑(PS) + 抛售高潮(SC)，距离${indexDiff}个周期`,
+                                start_index: Math.min(stopSignal.index, climaxSignal.index),
+                                end_index: Math.max(stopSignal.index, climaxSignal.index)
+                            };
+                        }
+                        // 派发结构：PSY + BC
+                        else if (stopSignal.type === 'PSY' && climaxSignal.type === 'BC') {
+                            stopSignal.matchedClimax = true;
+                            climaxSignal.matchedStop = true;
+
+                            // 创建配对信号
+                            const pairId = `pair_${stopSignal.index}_${climaxSignal.index}`;
+                            signals[pairId] = {
+                                type: 'PAIR',
+                                subtype: '派发结构',
+                                stopSignal: stopSignal,
+                                climaxSignal: climaxSignal,
+                                date: climaxSignal.date,
+                                index: climaxSignal.index,
+                                description: `派发结构：初步供应(PSY) + 买入高潮(BC)，距离${indexDiff}个周期`,
+                                start_index: Math.min(stopSignal.index, climaxSignal.index),
+                                end_index: Math.max(stopSignal.index, climaxSignal.index)
+                            };
+                        }
+                    }
+                }
+            }
+        }
+
+        // 辅助函数
+        function calculateMA(data, period) {
+            const ma = new Array(data.length).fill(0);
+            for (let i = period - 1; i < data.length; i++) {
+                const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+                ma[i] = sum / period;
+            }
+            return ma;
+        }
+
+        function calculateStd(data, period) {
+            const std = new Array(data.length).fill(0);
+            for (let i = period - 1; i < data.length; i++) {
+                const slice = data.slice(i - period + 1, i + 1);
+                const mean = slice.reduce((a, b) => a + b, 0) / period;
+                const variance = slice.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / period;
+                std[i] = Math.sqrt(variance);
+            }
+            return std;
+        }
+
+        function calculateVolatility(prices, period) {
+            const volatility = new Array(prices.length).fill(0);
+            for (let i = period; i < prices.length; i++) {
+                const returns = [];
+                for (let j = 0; j < period; j++) {
+                    if (prices[i - j - 1] > 0) {
+                        returns.push(Math.log(prices[i - j] / prices[i - j - 1]));
+                    }
+                }
+                if (returns.length > 0) {
+                    const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+                    const variance = returns.reduce((a, b) => a + Math.pow(b - meanReturn, 2), 0) / returns.length;
+                    volatility[i] = Math.sqrt(variance);
+                }
+            }
+            return volatility;
+        }
+
+        function calculateAvgRange(highs, lows, idx, period) {
+            let sum = 0;
+            let count = 0;
+            for (let i = Math.max(0, idx - period + 1); i <= idx; i++) {
+                sum += highs[i] - lows[i];
+                count++;
+            }
+            return count > 0 ? sum / count : 0;
+        }
+
+        function isDowntrend(prices, idx, lookback) {
+            if (idx < lookback) return false;
+            return prices[idx] < prices[idx - lookback];
+        }
+
+        function isUptrend(prices, idx, lookback) {
+            if (idx < lookback) return false;
+            return prices[idx] > prices[idx - lookback];
+        }
+
+        function calculateConfidenceLevel(volume, avgVolume, volatility) {
+            const volumeRatio = volume / avgVolume;
+            let confidence = '低';
+
+            if (volumeRatio > 3 && volatility > 0.03) confidence = '极高';
+            else if (volumeRatio > 2.5 && volatility > 0.02) confidence = '高';
+            else if (volumeRatio > 2 && volatility > 0.015) confidence = '中等';
+            else if (volumeRatio > 1.5) confidence = '低';
+
+            return confidence;
+        }
+
+        // 原有的市场背景和其他信号分析函数
+        function analyzeMarketBackgrounds(data, signals) {
+            const closes = data.close;
+            const volumes = data.volume;
+            const highs = data.high;
+            const lows = data.low;
+            const dates = data.dates;
+
+            if (closes.length < 20) return;
+
+            const windowSize = 20;
+            let lastBackground = null;
+            let backgroundStart = dates[windowSize];
+
+            for (let i = windowSize; i < closes.length; i += 10) {
+                const startIdx = i - windowSize;
+                const endIdx = i;
+
+                const windowCloses = closes.slice(startIdx, endIdx);
+                const windowHighs = highs.slice(startIdx, endIdx);
+                const windowLows = lows.slice(startIdx, endIdx);
+
+                const priceChange = (windowCloses[windowCloses.length-1] - windowCloses[0]) / windowCloses[0] * 100;
+                const volatility = (Math.max(...windowHighs) - Math.min(...windowLows)) / mean(windowCloses) * 100;
+
+                let background = '横盘市场';
+
+                if (priceChange > 8 && volatility > 10) {
+                    background = '牛市';
+                } else if (priceChange < -8) {
+                    background = '熊市';
+                } else if (priceChange > -15 && priceChange < 8 && volatility > 10) {
+                    background = '吸筹';
+                } else if (priceChange > -5 && priceChange < 12 && volatility > 8) {
+                    background = '派发';
+                }
+
+                if (background !== lastBackground) {
+                    if (lastBackground) {
+                        signals[`background_${i}`] = {
+                            type: '背景',
+                            subtype: lastBackground,
+                            date: dates[i],
+                            index: i,
+                            description: getBackgroundDescription(lastBackground),
+                            start_date: backgroundStart,
+                            end_date: dates[i]
+                        };
+                    }
+                    lastBackground = background;
+                    backgroundStart = dates[i];
+                }
+            }
+        }
+
+        function getBackgroundDescription(background) {
+            const descriptions = {
+                '吸筹': '震荡区->熊市->吸筹，供应到停止行为才减弱，需求开始入场',
+                '牛市': '需求主导，价格上涨，SOS回测，JOC回测',
+                '派发': '需求减弱，供应扩大，SOT，上冲回落',
+                '熊市': '供应主导，价格下跌，恐慌抛售，二次测试',
+                '横盘市场': '供需平衡，无明显趋势'
+            };
+            return descriptions[background] || '';
+        }
+
+        function analyzeSpecificSignals(data, signals) {
+            // 其他信号分析逻辑（保持原有）
+            // 这里可以添加其他信号的识别逻辑
+        }
+
+        function mean(arr) {
+            if (!arr || arr.length === 0) return 0;
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+
+        // 创建图注
+        function createLegend() {
+            const existingLegend = document.querySelector('.legend');
+            if (existingLegend) existingLegend.remove();
+
+            const legend = document.createElement('div');
+            legend.className = 'legend';
+            legend.innerHTML = `
+                <div class="legend-title">
+                    <i class="fas fa-map"></i>
+                    威科夫信号图注
+                </div>
+            `;
+
+            // 初步停止
+            const stopSignals = [
+                {name: '初步支撑 (PS)', color: '#3498db'},
+                {name: '初步供应 (PSY)', color: '#e67e22'}
+            ];
+
+            stopSignals.forEach(signal => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-color" style="background-color: ${signal.color}"></div>
+                    <span>${signal.name}</span>
+                `;
+                legend.appendChild(item);
+            });
+
+            // 高潮事件
+            legend.innerHTML += `<div style="margin-top: 10px; font-weight: 600; color: var(--text-primary);">高潮事件</div>`;
+
+            const climaxSignals = [
+                {name: '抛售高潮 (SC)', color: '#c0392b'},
+                {name: '买入高潮 (BC)', color: '#e67e22'}
+            ];
+
+            climaxSignals.forEach(signal => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-color" style="background-color: ${signal.color}"></div>
+                    <span>${signal.name}</span>
+                `;
+                legend.appendChild(item);
+            });
+
+            // 黑框标注
+            legend.innerHTML += `<div style="margin-top: 10px; font-weight: 600; color: var(--text-primary);">结构标注</div>`;
+
+            const pairSignal = {
+                name: 'PS+SC / PSY+BC 配对',
+                color: '#2c3e50',
+                style: 'border: 2px solid #2c3e50; background: rgba(44, 62, 80, 0.1);'
+            };
+
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            item.innerHTML = `
+                <div class="legend-color" style="${pairSignal.style}"></div>
+                <span>${pairSignal.name}</span>
+            `;
+            legend.appendChild(item);
+
+            const chartDiv = document.getElementById('chart');
+            chartDiv.appendChild(legend);
+
+            return legend;
+        }
+
+        // 更新图表
+        function updateChart() {
+            const stockSelect = document.getElementById('stockSelect');
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const stockCode = stockSelect.value;
+
+            if (!stockCode || !stockData[stockCode]) {
+                document.getElementById('chart').innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 50px; color: #f39c12; margin-bottom: 20px;"></i>
+                        <h3>请先选择股票</h3>
+                        <p>从下拉菜单中选择要分析的股票代码</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const stock = stockData[stockCode];
+
+            // 过滤数据
+            const filteredData = {
+                dates: [], open: [], high: [], low: [], close: [], volume: []
+            };
+
+            for (let i = 0; i < stock.dates.length; i++) {
+                const currentDate = stock.dates[i];
+                if (currentDate >= startDate && currentDate <= endDate) {
+                    filteredData.dates.push(stock.dates[i]);
+                    filteredData.open.push(stock.open[i]);
+                    filteredData.high.push(stock.high[i]);
+                    filteredData.low.push(stock.low[i]);
+                    filteredData.close.push(stock.close[i]);
+                    filteredData.volume.push(stock.volume[i]);
+                }
+            }
+
+            if (filteredData.dates.length === 0) {
+                document.getElementById('chart').innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-search" style="font-size: 50px; color: #95a5a6; margin-bottom: 20px;"></i>
+                        <h3>无数据</h3>
+                        <p>请调整时间范围或选择其他股票</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 分析信号
+            currentSignals = analyzeWyckoffSignals(filteredData);
+
+            // 计算成交量分布指标
+            volumeDistributionData = calculateVolumeDistribution(filteredData);
+            showVolumeDistribution(volumeDistributionData);
+
+            // 创建图表
+            createChart(stockCode, filteredData, currentSignals);
+        }
+
+        // 创建专业K线图
+        function createChart(stockCode, data, signals) {
+            const chartDiv = document.getElementById('chart');
+            chartDiv.innerHTML = '';
+
+            // 显示加载状态
+            chartDiv.innerHTML = `
+                <div style="text-align: center; padding: 100px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #3498db; margin-bottom: 20px;"></i>
+                    <div style="font-size: 18px; color: #2c3e50;">正在生成威科夫分析图表...</div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                // 创建子图
+                const figure = {
+                    data: [],
+                    layout: {
+                        grid: {rows: 2, columns: 1, pattern: 'independent', rowheight: [0.7, 0.3]},
+                        title: {
+                            text: `📈 ${stockCode} - 威科夫专业分析`,
+                            font: {size: 22, color: '#2c3e50', family: 'Arial, sans-serif'},
+                            x: 0.05,
+                            xanchor: 'left'
+                        },
+                        xaxis: {
+                            title: {text: '日期', font: {size: 14}},
+                            type: 'date',
+                            gridcolor: '#f0f0f0',
+                            rangeslider: {visible: false},
+                            showgrid: true,
+                            tickformat: '%Y-%m-%d',
+                            showline: true,
+                            linecolor: '#e0e0e0'
+                        },
+                        xaxis2: {
+                            title: {text: '日期', font: {size: 14}},
+                            type: 'date',
+                            gridcolor: '#f0f0f0',
+                            showgrid: true,
+                            showline: true,
+                            linecolor: '#e0e0e0'
+                        },
+                        yaxis: {
+                            title: {text: '价格 (元)', font: {size: 14}},
+                            gridcolor: '#f0f0f0',
+                            tickformat: '.2f',
+                            showgrid: true,
+                            zeroline: false,
+                            showline: true,
+                            linecolor: '#e0e0e0'
+                        },
+                        yaxis2: {
+                            title: {text: '成交量', font: {size: 14}},
+                            gridcolor: '#f0f0f0',
+                            showgrid: true,
+                            zeroline: false,
+                            showline: true,
+                            linecolor: '#e0e0e0'
+                        },
+                        plot_bgcolor: 'white',
+                        paper_bgcolor: 'white',
+                        margin: {l: 80, r: 80, t: 100, b: 80},
+                        showlegend: false,
+                        hovermode: 'x unified',
+                        height: 850,
+                        annotations: [],
+                        shapes: [],
+                        hoverlabel: {
+                            bgcolor: 'white',
+                            font: {size: 12},
+                            bordercolor: '#3498db'
+                        }
+                    },
+                    config: {
+                        responsive: true,
+                        displayModeBar: true,
+                        displaylogo: false,
+                        modeBarButtonsToAdd: [
+                            {
+                                name: 'drawline',
+                                title: '绘制趋势线',
+                                icon: Plotly.Icons.drawline,
+                                click: function(gd) {
+                                    Plotly.relayout(gd, {
+                                        'dragmode': 'drawline'
+                                    });
+                                }
+                            },
+                            {
+                                name: 'drawopenpath',
+                                title: '绘制自由路径',
+                                icon: Plotly.Icons.drawopenpath,
+                                click: function(gd) {
+                                    Plotly.relayout(gd, {
+                                        'dragmode': 'drawopenpath'
+                                    });
+                                }
+                            },
+                            {
+                                name: 'eraseshape',
+                                title: '擦除图形',
+                                icon: Plotly.Icons.eraseshape,
+                                click: function(gd) {
+                                    Plotly.relayout(gd, {
+                                        'dragmode': 'eraseshape'
+                                    });
+                                }
+                            }
+                        ],
+                        modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+                        scrollZoom: true
+                    }
+                };
+
+                // 添加K线图
+                figure.data.push({
+                    type: 'candlestick',
+                    x: data.dates,
+                    open: data.open,
+                    high: data.high,
+                    low: data.low,
+                    close: data.close,
+                    xaxis: 'x',
+                    yaxis: 'y',
+                    name: 'K线',
+                    increasing: {
+                        line: {color: '#e74c3c', width: 1},
+                        fillcolor: '#e74c3c'
+                    },
+                    decreasing: {
+                        line: {color: '#27ae60', width: 1},
+                        fillcolor: '#27ae60'
+                    },
+                    hoverinfo: 'all',
+                    hoverlabel: {
+                        bgcolor: 'white',
+                        font: {size: 12}
+                    }
+                });
+
+                // 添加成交量图
+                const volumeColors = data.close.map((close, i) =>
+                    close >= data.open[i] ? '#e74c3c' : '#27ae60'
+                );
+
+                figure.data.push({
+                    type: 'bar',
+                    x: data.dates,
+                    y: data.volume,
+                    xaxis: 'x2',
+                    yaxis: 'y2',
+                    name: '成交量',
+                    marker: {color: volumeColors},
+                    opacity: 0.7,
+                    hoverinfo: 'x+y',
+                    hovertemplate: '成交量: %{y:.0f}<extra></extra>'
+                });
+
+                // 处理背景区域
+                const backgroundSignals = Object.values(signals).filter(s => s.type === '背景');
+                for (let i = 0; i < backgroundSignals.length; i++) {
+                    const signal = backgroundSignals[i];
+                    if (activeSignalTypes.has('背景')) {
+                        const nextSignal = backgroundSignals[i + 1];
+                        const endDate = nextSignal ? nextSignal.date : data.dates[data.dates.length - 1];
+
+                        figure.layout.shapes.push({
+                            type: 'rect',
+                            xref: 'x',
+                            yref: 'paper',
+                            x0: signal.start_date,
+                            x1: endDate,
+                            y0: 0,
+                            y1: 1,
+                            fillcolor: backgroundColors[signal.subtype],
+                            opacity: 0.2,
+                            layer: 'below',
+                            line: {width: 0},
+                            name: signal.subtype
+                        });
+                    }
+                }
+
+                // 添加黑框标注（配对信号）
+                const pairSignals = Object.values(signals).filter(s => s.type === 'PAIR');
+                pairSignals.forEach(pair => {
+                    if (pair.start_index !== undefined && pair.end_index !== undefined) {
+                        const startDate = data.dates[pair.start_index];
+                        const endDate = data.dates[pair.end_index];
+                        const minPrice = Math.min(...data.low.slice(pair.start_index, pair.end_index + 1));
+                        const maxPrice = Math.max(...data.high.slice(pair.start_index, pair.end_index + 1));
+
+                        // 添加黑框
+                        figure.layout.shapes.push({
+                            type: 'rect',
+                            xref: 'x',
+                            yref: 'y',
+                            x0: startDate,
+                            x1: endDate,
+                            y0: minPrice * 0.98,
+                            y1: maxPrice * 1.02,
+                            fillcolor: 'rgba(44, 62, 80, 0.1)',
+                            line: {
+                                color: '#2c3e50',
+                                width: 2,
+                                dash: 'solid'
+                            },
+                            layer: 'above',
+                            name: pair.subtype
+                        });
+
+                        // 添加标注文字
+                        figure.layout.annotations.push({
+                            x: endDate,
+                            y: maxPrice * 1.03,
+                            xref: 'x',
+                            yref: 'y',
+                            text: pair.subtype,
+                            showarrow: false,
+                            font: {
+                                size: 12,
+                                color: '#2c3e50',
+                                weight: 'bold'
+                            },
+                            bgcolor: 'rgba(255, 255, 255, 0.8)',
+                            bordercolor: '#2c3e50',
+                            borderwidth: 1,
+                            borderpad: 4,
+                            hovertext: pair.description
+                        });
+                    }
+                });
+
+                // 添加信号标注
+                signalAnnotations = {};
+                Object.values(signals).forEach(signal => {
+                    if (signal.type !== '背景' && signal.type !== 'PAIR' && activeSignalTypes.has(signal.type)) {
+                        // 确定Y轴位置
+                        let yPosition;
+                        if (signal.type === 'PS' || signal.type === 'SC' || signal.subtype === '初步支撑' || signal.subtype === '抛售高潮') {
+                            yPosition = data.low[signal.index] * 0.97;
+                        } else if (signal.type === 'PSY' || signal.type === 'BC' || signal.subtype === '初步供应' || signal.subtype === '买入高潮') {
+                            yPosition = data.high[signal.index] * 1.03;
+                        } else {
+                            yPosition = data.high[signal.index] * 1.02;
+                        }
+
+                        const annotation = {
+                            x: signal.date,
+                            y: yPosition,
+                            xref: 'x',
+                            yref: 'y',
+                            text: signal.subtype || signal.type,
+                            showarrow: true,
+                            arrowhead: 2,
+                            arrowsize: 1,
+                            arrowwidth: 2,
+                            arrowcolor: signalColors[signal.type] || signalColors[signal.subtype] || '#3498db',
+                            bgcolor: 'white',
+                            bordercolor: signalColors[signal.type] || signalColors[signal.subtype] || '#3498db',
+                            borderwidth: 2,
+                            borderpad: 4,
+                            font: {color: signalColors[signal.type] || signalColors[signal.subtype] || '#3498db', size: 11, weight: 'bold'},
+                            hovertext: signal.description,
+                            hoverlabel: {
+                                bgcolor: 'white',
+                                font: {size: 12}
+                            },
+                            captureevents: true
+                        };
+                        figure.layout.annotations.push(annotation);
+                        signalAnnotations[signal.type + '_' + signal.index] = signal;
+                    }
+                });
+
+                // 配置联动
+                figure.layout.xaxis2 = {...figure.layout.xaxis2, matches: 'x'};
+
+                // 绘图
+                Plotly.newPlot(chartDiv, figure.data, figure.layout, figure.config).then(function() {
+                    // 添加图注
+                    createLegend();
+
+                    // 添加点击事件
+                    chartDiv.on('plotly_click', function(data) {
+                        if (data.points && data.points[0]) {
+                            const point = data.points[0];
+                            const signalKey = Object.keys(signalAnnotations).find(key =>
+                                Math.abs(new Date(signalAnnotations[key].date) - new Date(point.x)) < 86400000 // 1天内的误差
+                            );
+                            if (signalKey) {
+                                showSignalDetails(signalAnnotations[signalKey]);
+                            }
+                        }
+                    });
+                });
+            }, 100);
+        }
+
+        // 显示信号详情
+        function showSignalDetails(signal) {
+            const details = `
+                <div style="text-align: left;">
+                    <h3 style="color: ${signalColors[signal.type] || signalColors[signal.subtype] || '#3498db'}; margin-bottom: 10px;">
+                        ${signal.subtype || signal.type}
+                    </h3>
+                    <p><strong>发生时间:</strong> ${signal.date}</p>
+                    <p><strong>价格:</strong> ${signal.price ? signal.price.toFixed(2) : 'N/A'}</p>
+                    ${signal.volume ? `<p><strong>成交量:</strong> ${(signal.volume / 10000).toFixed(2)}万</p>` : ''}
+                    ${signal.confidence ? `<p><strong>置信度:</strong> ${signal.confidence}</p>` : ''}
+                    <p style="margin-top: 15px; background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                        ${signal.description}
+                    </p>
+                </div>
+            `;
+
+            alert(`${signal.subtype || signal.type}\n发生时间: ${signal.date}\n${signal.description}`);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认日期为最近3个月
+            const today = new Date();
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            document.getElementById('startDate').value = threeMonthsAgo.toISOString().split('T')[0];
+
+            // 默认激活所有信号
+            allSignalsFlat.forEach(signal => activeSignalTypes.add(signal));
+
+            // 添加键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'u') {
+                    document.getElementById('fileInput').click();
+                }
+                if (e.ctrlKey && e.key === 'Enter') {
+                    updateChart();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
